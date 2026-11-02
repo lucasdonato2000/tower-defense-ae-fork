@@ -8,6 +8,7 @@ from config import TILE_SIZE, TILE_COUNT, BOARD_X, BOARD_Y, SCREEN_HEIGHT, SCREE
     TOWER0_COST_MONEY, TOWER1_COST_MONEY, TOWER1_COST_RESOURCE_1, TOWER2_COST_MONEY, TOWER2_COST_RESOURCE_1, TOWER2_COST_RESOURCE_2,\
     FACTORY0_COST_MONEY, FACTORY1_COST_MONEY, FACTORY1_COST_RESOURCE_1, FACTORY_DEATH_PENALTY,\
     TOWER_SPRITES, FACTORY_SPRITES, BOARD, BG_COLOR, BOARD_COLOR, LINE_COLOR, UI_BOX_COLOR, UI_PANEL_COLOR, PATH_TILE_COLOR, TOWER_TILE_COLOR_A, TOWER_TILE_COLOR_B, UI_BOX_BORDER, UI_BOX_HOVER
+from specs import TOWER_SPECS, FACTORY_BOARD_BASE
 from game_logic import perform_action, update_game_state, get_starting_board, render
 
 class TowerDefenseEnv(gym.Env):
@@ -23,14 +24,14 @@ class TowerDefenseEnv(gym.Env):
 
         self.action_space = gym.spaces.MultiDiscrete([
             3,  # action_type: 0=build tower, 1=build factory, 2=start wave phase
-            3,  # action_subtype: tower/factory type
-            10, # x coordinate
-            10  # y coordinate
+            max(3, len(TOWER_SPECS)),  # action_subtype: tower/factory type
+            TILE_COUNT, # x coordinate
+            TILE_COUNT  # y coordinate
         ])
         
         # Observation space
         self.observation_space = gym.spaces.Dict({
-            "board": gym.spaces.Box(low=0, high=6, shape=(10, 10), dtype=np.int32),         # The state of the game grid - what towers and factories are where and where is the path enemies walk on
+            "board": gym.spaces.Box(low=0, high=FACTORY_BOARD_BASE + 1, shape=(TILE_COUNT, TILE_COUNT), dtype=np.int32),         # The state of the game grid - what towers and factories are where and where is the path enemies walk on
             "resources": gym.spaces.Box(low=0, high=100000, shape=(5,), dtype=np.int32),    # Health, Money, Resource_1, Resouce_2, current wave index
             "next_wave": gym.spaces.Box(low=0, high=10000, shape=(3,), dtype=np.int32),      # How many enemies of each type there are in the next wave, example 1 type0, 2 type1 and 4 type2 enemies are represented as [1, 2, 4]
             "next_3_waves": gym.spaces.Box(low=0, high=10000, shape=(3, 3), dtype=np.int32)  # Show the next three waves to further allow the agent to plan ahead
@@ -118,9 +119,6 @@ class TowerDefenseEnv(gym.Env):
                 self.money, self.resource_1, self.resource_2,
                 self.can_place_towers, self.enemy_waves, self.current_wave,
                 False, 0, 0,
-                TOWER0_COST_MONEY,
-                TOWER1_COST_MONEY, TOWER1_COST_RESOURCE_1,
-                TOWER2_COST_MONEY, TOWER2_COST_RESOURCE_1, TOWER2_COST_RESOURCE_2,
                 FACTORY0_COST_MONEY,
                 FACTORY1_COST_MONEY, FACTORY1_COST_RESOURCE_1,
                 TILE_SIZE, BOARD_X, BOARD_Y, self.time
@@ -249,7 +247,7 @@ class TowerDefenseEnv(gym.Env):
         
         # Return the observation
         return {
-            "board": np.array([row[:10] for row in self.board[:10]], dtype=np.int32),
+            "board": np.array([row[:TILE_COUNT] for row in self.board[:TILE_COUNT]], dtype=np.int32),
             "resources": np.array([
                 self.money,
                 self.resource_1,

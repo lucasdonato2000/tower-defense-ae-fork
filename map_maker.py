@@ -4,7 +4,8 @@ import random
 import heapq
 import argparse
 import os
-from config import CURRENT_BOARD_FILE, SCREEN_HEIGHT, SCREEN_WIDTH
+from paths import CURRENT_BOARD_FILE
+from size import SCREEN_HEIGHT, SCREEN_WIDTH, TILE_COUNT, LAST
 
 # Window size
 screen_width = SCREEN_WIDTH
@@ -23,14 +24,14 @@ max_board_width = screen_width - 300
 max_board_height = screen_height - 40
 board_size = min(max_board_width, max_board_height)
 
-tile_count = 10
+tile_count = TILE_COUNT
 tile_size = board_size // tile_count
 board_size = tile_size * tile_count
 
 board_x = (screen_width - board_size) // 2
 board_y = (screen_height - board_size) // 2
 
-# Colors - suggested by ChatGPT
+# Colors
 bg_color = (40, 40, 40)             # Window background
 board_color = (0, 0, 0)             # Board background
 ui_panel_color = (60, 60, 60)       # UI panel background
@@ -90,13 +91,13 @@ def get_base_enemy_coords(home_base, enemy_spawn):
     if home_base[0] == 0:
         home_base_x = board_x + tile_size * int(home_base[0]) - tile_size / 2
         home_base_y = board_y + tile_size * int(home_base[1]) + tile_size / 4
-    elif home_base[0] == 9:
+    elif home_base[0] == LAST:
         home_base_x = board_x + tile_size * int(home_base[0]) + tile_size
         home_base_y = board_y + tile_size * int(home_base[1]) + tile_size / 4
     elif home_base[1] == 0:
         home_base_x = board_x + tile_size * int(home_base[0]) + tile_size / 4
         home_base_y = board_y + tile_size * int(home_base[1]) - tile_size / 2
-    elif home_base[1] == 9:
+    elif home_base[1] == LAST:
         home_base_x = board_x + tile_size * int(home_base[0]) + tile_size / 4
         home_base_y = board_y + tile_size * int(home_base[1]) + tile_size
         
@@ -106,13 +107,13 @@ def get_base_enemy_coords(home_base, enemy_spawn):
     if enemy_spawn[0] == 0:
         enemy_spawn_x = board_x + tile_size * int(enemy_spawn[0]) - tile_size / 2
         enemy_spawn_y = board_y + tile_size * int(enemy_spawn[1]) + tile_size / 4
-    elif enemy_spawn[0] == 9:
+    elif enemy_spawn[0] == LAST:
         enemy_spawn_x = board_x + tile_size * int(enemy_spawn[0]) + tile_size
         enemy_spawn_y = board_y + tile_size * int(enemy_spawn[1]) + tile_size / 4
     elif enemy_spawn[1] == 0:
         enemy_spawn_x = board_x + tile_size * int(enemy_spawn[0]) + tile_size / 4
         enemy_spawn_y = board_y + tile_size * int(enemy_spawn[1]) - tile_size / 2
-    elif enemy_spawn[1] == 9:
+    elif enemy_spawn[1] == LAST:
         enemy_spawn_x = board_x + tile_size * int(enemy_spawn[0]) + tile_size / 4
         enemy_spawn_y = board_y + tile_size * int(enemy_spawn[1]) + tile_size
         
@@ -126,10 +127,10 @@ def get_base_enemy_coords(home_base, enemy_spawn):
 
 def make_board(): # Generate an empty board
     board = []
-    for i in range(11):
+    for i in range(tile_count + 1):
         board_line = []
-        for j in range(11):
-            if j == 10 or i == 10:
+        for j in range(tile_count + 1):
+            if j == tile_count or i == tile_count:
                 board_line.append(8)
             else:
                 board_line.append(1)
@@ -143,11 +144,12 @@ def make_random_board(): # Generate random weights for the board tiles
     global random_max
     random_max = 0
     
-    for i in range(11):
+    center = (tile_count - 1) / 2
+    for i in range(tile_count + 1):
         board_line = []
-        for j in range(11):
-            distance_from_center = abs(j - 4.5) + abs(i - 4.5)
-            if j == 10 or i == 10:
+        for j in range(tile_count + 1):
+            distance_from_center = abs(j - center) + abs(i - center)
+            if j == tile_count or i == tile_count:
                 base_weight = INF
             else:
                 base_weight = random.uniform(0, BOARD_MAX_RANDOM)
@@ -160,13 +162,13 @@ def make_random_board(): # Generate random weights for the board tiles
 
     return board
 
-def save_board(board, home_base, enemy_spawn): # Save the board into a .txt file
+def save_board(board, home_base, enemy_spawn, path=None): # Save the board into a .txt file
     
-    file = open(CURRENT_BOARD_FILE, "w")
-    for row in range(11):
-        for col in range(11):
+    file = open(path or CURRENT_BOARD_FILE, "w")
+    for row in range(tile_count + 1):
+        for col in range(tile_count + 1):
             file.write(str(board[row][col]))
-            if col <= 9:
+            if col <= tile_count - 1:
                 file.write(",")
         file.write("\n")
     file.write(str(home_base[0]) + "," + str(home_base[1]) + "\n")
@@ -179,13 +181,13 @@ def random_start(): # Choose random spawn/base coordinates
     coords = (0, 0)
     
     if start == 0:
-        coords = (0, random.randrange(0, 10))
+        coords = (0, random.randrange(0, tile_count))
     elif start == 1:
-        coords = (random.randrange(0, 10), 0)
+        coords = (random.randrange(0, tile_count), 0)
     elif start == 2:
-        coords = (9, random.randrange(0, 10))
+        coords = (LAST, random.randrange(0, tile_count))
     elif start == 3:
-        coords = (random.randrange(0, 10), 9)
+        coords = (random.randrange(0, tile_count), LAST)
         
     return coords
 
@@ -205,11 +207,11 @@ def dijkstra(board, source, target):    # Find the lowest weight path from sourc
     minHeap = []
     
     # Initialize the lists
-    for row in range(10):
+    for row in range(tile_count):
         dist_row = []
         visited_row = []
         prev_row = []
-        for col in range(10):
+        for col in range(tile_count):
             dist_row.append(INF)
             visited_row.append(False)
             prev_row.append(None)
@@ -243,7 +245,7 @@ def dijkstra(board, source, target):    # Find the lowest weight path from sourc
             nx = x + dx
             ny = y + dy
             
-            if nx < 0 or nx >= 10 or ny < 0 or ny >= 10: # Check if the tile is outside the board
+            if nx < 0 or nx >= tile_count or ny < 0 or ny >= tile_count: # Check if the tile is outside the board
                 continue
             
             newDist = dist[y][x] + board[ny][nx] # Save new distance based on the neighboring tile's weight
@@ -437,18 +439,19 @@ def generate_parameters(difficulty):
     
     use_global = not bool(t < 0.5)
         
-    min_len = int(20 - t * 18)
-    max_len = int(35 - t * 15)
+    s = tile_count / 10  # las longitudes se escalan con el tamano del tablero (s = 1 para 10x10)
+    min_len = int((20 - t * 18) * s)
+    max_len = int((35 - t * 15) * s)
         
-    num_waypoints = int(5 - t * 5)
+    num_waypoints = int((5 - t * 5) * s)
     
-    waypoint_offset_strength = int(1 + (1 - t) * 4) # Formula suggested by AI - ChatGPT
+    waypoint_offset_strength = int((1 + (1 - t) * 4) * s) # Formula suggested by AI - ChatGPT
     
     if t < 0.4:
         max_start_end_dist = None
         min_start_end_dist = 10
     else:
-        max_start_end_dist = int(20 - t * 12) # Formula suggested by AI - ChatGPT
+        max_start_end_dist = int((20 - t * 12) * s) # Formula suggested by AI - ChatGPT
         min_start_end_dist = 2
     
     return {
@@ -460,6 +463,31 @@ def generate_parameters(difficulty):
         "max_start_end_dist": max_start_end_dist,
         "min_start_end_dist": min_start_end_dist
     }
+
+def generate_map(seed, difficulty, max_attempts=None):
+    """Version headless de la tecla X del editor: genera un mapa completo a partir de
+    seed y difficulty (1..20). Devuelve (board, home_base, enemy_spawn) o None si no
+    encuentra un camino valido en max_attempts intentos."""
+    random.seed(seed)
+    difficulty = max(min(difficulty, 20), 1)
+    if max_attempts is None:  # caminos largos en tableros grandes necesitan mas intentos
+        max_attempts = MAX_MAP_GENERATION_ATTEMPTS if tile_count <= 10 else 10 * MAX_MAP_GENERATION_ATTEMPTS
+    for attempt in range(max_attempts):
+        params = generate_parameters(difficulty)
+        random_board = make_random_board()
+        home_base, enemy_spawn = choose_random_start_end()
+        while not validate_source_target(enemy_spawn, home_base, params["min_start_end_dist"], params["max_start_end_dist"]):
+            home_base, enemy_spawn = choose_random_start_end()
+        path = generate_valid_path(random_board, enemy_spawn, home_base, params["waypoint_count"], params["waypoint_offset"], params["use_global"])
+        if path is None or not validate_path(enemy_spawn, home_base, path):
+            continue
+        if not (params["min_path_length"] <= len(path) <= params["max_path_length"]):
+            continue
+        board = make_board()
+        for x, y in path:
+            board[y][x] = 0
+        return board, home_base, enemy_spawn, attempt + 1
+    return None
 
 def validate_seed(seed):
     if seed is None:
@@ -623,7 +651,7 @@ def run_map_maker(seed, args_seed, difficulty):
                         map_x = (click_pos[0] - board_x) // tile_size
                         map_y = (click_pos[1] - board_y) // tile_size
                         if map_x < len(board) - 1 and map_y < len(board) - 1:
-                            if map_x in (0, 9) or map_y in (0, 9):
+                            if map_x in (0, LAST) or map_y in (0, LAST):
                                 if (map_x, map_y) == home_base or (map_x, map_y) == enemy_spawn:
                                     temp = home_base
                                     home_base = enemy_spawn

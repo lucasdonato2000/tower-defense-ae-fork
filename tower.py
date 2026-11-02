@@ -1,6 +1,7 @@
 
 import pygame
 from bullet import Bullet
+from specs import TOWER_SPECS
 from math import *
 import os
 
@@ -13,18 +14,16 @@ class Tower:
         self.x = x
         self.y = y
         self.health = health
-        self.shoot_radius = 2.5 * tile_size
-        self.shot_cooldown = 800
-        self.last_shot_time = 0
-        self.bullet_speed = 3.2
+        spec = TOWER_SPECS[type]
         self.type = type
+        self.shoot_radius = spec["range_tiles"] * tile_size
+        self.shot_cooldown = spec["cooldown"]
+        self.last_shot_time = 0
+        self.bullet_speed = spec["bullet_speed"]
+        self.power = spec["power"]
+        self.splash_px = spec["splash_tiles"] * tile_size
         self.sprite = None
         self.sprite_size = 1
-        
-        if self.type == 1:
-            self.shot_cooldown = 600
-        elif self.type == 2:
-            self.shot_cooldown = 500
         
         # Load and scale sprite
         if self.sprite is None:
@@ -32,7 +31,7 @@ class Tower:
                 BASE_PATH = os.path.dirname(__file__)
                 ASSETS_PATH = os.path.join(BASE_PATH, "assets", "Sprites")
                 
-                sprite_path = os.path.join(ASSETS_PATH, "Towers", f"Tower-#{self.type + 1}.png")
+                sprite_path = os.path.join(ASSETS_PATH, "Towers", f"Tower-#{min(self.type, 2) + 1}.png")
                 original = pygame.image.load(sprite_path)
                 
                 # Scale to fit tile size
@@ -74,7 +73,7 @@ class Tower:
         if target is None:
             return
         
-        bullet = Bullet(self.x, self.y, velocity=self.bullet_speed, type=self.type)
+        bullet = Bullet(self.x, self.y, velocity=self.bullet_speed, type=self.power, splash=self.splash_px)
         
         bullet.get_target(target)
             

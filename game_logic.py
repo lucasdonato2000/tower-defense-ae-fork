@@ -1,15 +1,15 @@
 
 import pygame
+from size import TILE_COUNT as _N, LAST as _LAST
+from specs import TOWER_SPECS, FACTORY_BOARD_BASE
 from enemy import Enemy
 from tower import Tower
 from factory import Factory
-
 
 def get_tile_center(col, row, board_x, board_y, tile_size):
     cx = board_x + col * tile_size + tile_size / 2
     cy = board_y + row * tile_size + tile_size / 2
     return cx, cy
-
 
 def draw_tower_inventory(surface, tower_sprites, mouse_pos, board_x, board_y, board_size, screen_width, ui_panel_color, ui_box_color, ui_box_hover, ui_box_border, mode = 0):
 
@@ -92,7 +92,7 @@ def build_enemy_path(board, enemy_spawn, home_base, board_x, board_y, tile_size)
         for dir in directions:
             next = (current[0] + dir[0], current[1] + dir[1])
             dir_name = dir[2]
-            if (next[0] >= 0 and next[0] <= 9 and next[1] >= 0 and next[1] <= 9):
+            if (next[0] >= 0 and next[0] <= _LAST and next[1] >= 0 and next[1] <= _LAST):
                 if board[next[1]][next[0]] == 0:
                     if next not in visited:
                         visited.append(current)                       
@@ -114,9 +114,9 @@ def build_enemy_path(board, enemy_spawn, home_base, board_x, board_y, tile_size)
         enemy_spawn_x = enemy_spawn_coords[0] + tile_size / 4
         enemy_spawn_y = enemy_spawn_coords[1] + tile_size / 4
         if enemy_spawn[0] == 0: enemy_dir = 'right'
-        if enemy_spawn[0] == 9: enemy_dir = 'left'
+        if enemy_spawn[0] == _LAST: enemy_dir = 'left'
         if enemy_spawn[1] == 0: enemy_dir = 'down'
-        if enemy_spawn[1] == 9: enemy_dir = 'up'
+        if enemy_spawn[1] == _LAST: enemy_dir = 'up'
         
         waypoints.insert(0, {"x": enemy_spawn_x, "y": enemy_spawn_y, "dir": enemy_dir})
         
@@ -125,9 +125,9 @@ def build_enemy_path(board, enemy_spawn, home_base, board_x, board_y, tile_size)
         home_base_y = home_base_coords[1] + tile_size / 4
         
         if home_base[1] == 0: home_dir = 'up'
-        if home_base[1] == 9: home_dir = 'down'
+        if home_base[1] == _LAST: home_dir = 'down'
         if home_base[0] == 0: home_dir = 'left'
-        if home_base[0] == 9: home_dir = 'right'
+        if home_base[0] == _LAST: home_dir = 'right'
         
         waypoints[-1]["dir"] = home_dir
         
@@ -161,7 +161,6 @@ def build_enemy_waves(wave_file):
 
     return waves
     
-    
 def draw_board(surface, board, board_x, board_y, board_size, board_color, tile_count, tile_size, path_tile_color, tower_tile_color_a, tower_tile_color_b, line_color):
     # Draw board background
     board_rect = pygame.Rect(board_x, board_y, board_size, board_size)
@@ -188,7 +187,6 @@ def draw_board(surface, board, board_x, board_y, board_size, board_color, tile_c
         y = board_y + i * tile_size
         pygame.draw.line(surface, line_color, (board_x, y), (board_x + board_size, y), 1)
 
-
 def get_base_enemy_coords(home_base, enemy_spawn, board_x, board_y, tile_size):
     home_base_coords = []
     enemy_spawn_coords = []
@@ -199,13 +197,13 @@ def get_base_enemy_coords(home_base, enemy_spawn, board_x, board_y, tile_size):
     if home_base[0] == 0:
         home_base_x = board_x + tile_size * int(home_base[0]) - tile_size / 2
         home_base_y = board_y + tile_size * int(home_base[1]) + tile_size / 4
-    elif home_base[0] == 9:
+    elif home_base[0] == _LAST:
         home_base_x = board_x + tile_size * int(home_base[0]) + tile_size
         home_base_y = board_y + tile_size * int(home_base[1]) + tile_size / 4
     elif home_base[1] == 0:
         home_base_x = board_x + tile_size * int(home_base[0]) + tile_size / 4
         home_base_y = board_y + tile_size * int(home_base[1]) - tile_size / 2
-    elif home_base[1] == 9:
+    elif home_base[1] == _LAST:
         home_base_x = board_x + tile_size * int(home_base[0]) + tile_size / 4
         home_base_y = board_y + tile_size * int(home_base[1]) + tile_size
         
@@ -215,13 +213,13 @@ def get_base_enemy_coords(home_base, enemy_spawn, board_x, board_y, tile_size):
     if enemy_spawn[0] == 0:
         enemy_spawn_x = board_x + tile_size * int(enemy_spawn[0]) - tile_size / 2
         enemy_spawn_y = board_y + tile_size * int(enemy_spawn[1]) + tile_size / 4
-    elif enemy_spawn[0] == 9:
+    elif enemy_spawn[0] == _LAST:
         enemy_spawn_x = board_x + tile_size * int(enemy_spawn[0]) + tile_size
         enemy_spawn_y = board_y + tile_size * int(enemy_spawn[1]) + tile_size / 4
     elif enemy_spawn[1] == 0:
         enemy_spawn_x = board_x + tile_size * int(enemy_spawn[0]) + tile_size / 4
         enemy_spawn_y = board_y + tile_size * int(enemy_spawn[1]) - tile_size / 2
-    elif enemy_spawn[1] == 9:
+    elif enemy_spawn[1] == _LAST:
         enemy_spawn_x = board_x + tile_size * int(enemy_spawn[0]) + tile_size / 4
         enemy_spawn_y = board_y + tile_size * int(enemy_spawn[1]) + tile_size
         
@@ -381,6 +379,32 @@ def render(board, home_base_coords, enemy_spawn_coords, mouse_pos,
 
         pygame.display.flip()
 
+def resolve_bullet_hit(bullet, enemies, hit_enemy):
+    """Enemigos eliminados por el impacto de una bala del jugador.
+    Sin area (bullet.splash == 0) solo puede caer hit_enemy; con area caen todos los
+    enemigos dentro del radio. En ambos casos solo mueren los de tipo <= bullet.type."""
+    if bullet.splash > 0:
+        r2 = bullet.splash * bullet.splash
+        targets = [e for e in enemies if (e.x - bullet.x) ** 2 + (e.y - bullet.y) ** 2 <= r2]
+        if hit_enemy not in targets:
+            targets.append(hit_enemy)
+    else:
+        targets = [hit_enemy]
+    return [e for e in targets if e.type <= bullet.type]
+
+def resolve_bullet_hit(bullet, enemies, hit_enemy):
+    """Enemigos eliminados por el impacto de una bala del jugador.
+    Sin area (bullet.splash == 0) solo puede caer hit_enemy; con area caen todos los
+    enemigos dentro del radio. En ambos casos solo mueren los de tipo <= bullet.type."""
+    if bullet.splash > 0:
+        r2 = bullet.splash * bullet.splash
+        targets = [e for e in enemies if (e.x - bullet.x) ** 2 + (e.y - bullet.y) ** 2 <= r2]
+        if hit_enemy not in targets:
+            targets.append(hit_enemy)
+    else:
+        targets = [hit_enemy]
+    return [e for e in targets if e.type <= bullet.type]
+
 def update_game_state(
     enemies, enemies_spawned, enemies_to_spawn,
     spawn_started, last_spawn_time, spawn_interval,
@@ -467,10 +491,10 @@ def update_game_state(
 
             # Remove bullet and hit enemy and add resource
             if hit_enemy:
-                if hit_enemy.type <= bullet.type:
-                    money += hit_enemy.reward
+                for killed in resolve_bullet_hit(bullet, enemies, hit_enemy):
+                    money += killed.reward
                     reward += 1 # Reward for defeating enemies
-                    enemies.remove(hit_enemy)
+                    enemies.remove(killed)
                 bullets.remove(bullet)
                 continue
             
@@ -505,9 +529,6 @@ def perform_action(action_type, action_subtype, tile_x, tile_y,
                   enemy_waves, current_wave, 
                   spawn_started, enemies_to_spawn,
                   last_spawn_time,
-                  tower0_cost_money,
-                  tower1_cost_money, tower1_cost_resource_1,
-                  tower2_cost_money, tower2_cost_resource_1, tower2_cost_resource_2,
                   factory0_cost_money,
                   factory1_cost_money, factory1_cost_resource_1,
                   tile_size, board_x, board_y, time):
@@ -539,24 +560,18 @@ def perform_action(action_type, action_subtype, tile_x, tile_y,
         
         tower_center_x, tower_center_y = get_tile_center(tile_x, tile_y, board_x, board_y, tile_size)
         
-        # Tower 0
-        if tower_index == 0 and money >= tower0_cost_money:
-            new_tower = Tower(tower_center_x, tower_center_y, health=100, tile_size=tile_size)
-            money -= tower0_cost_money
-            
-        # Tower 1
-        elif tower_index == 1 and money >= tower1_cost_money and resource_1 >= tower1_cost_resource_1:
-            new_tower = Tower(tower_center_x, tower_center_y, health=100, tile_size=tile_size, type=1)
-            money -= tower1_cost_money
-            resource_1 -= tower1_cost_resource_1
-            
-        # Tower 2
-        elif tower_index == 2 and money >= tower2_cost_money and resource_1 >= tower2_cost_resource_1 and resource_2 >= tower2_cost_resource_2:
-            new_tower = Tower(tower_center_x, tower_center_y, health=100, tile_size=tile_size, type=2)
-            money -= tower2_cost_money
-            resource_1 -= tower2_cost_resource_1
-            resource_2 -= tower2_cost_resource_2
-            
+        # Los costos salen de la tabla TOWER_SPECS (specs.py)
+        affordable = False
+        if 0 <= tower_index < len(TOWER_SPECS):
+            cost_money, cost_r1, cost_r2 = TOWER_SPECS[tower_index]["cost"]
+            affordable = money >= cost_money and resource_1 >= cost_r1 and resource_2 >= cost_r2
+
+        if affordable:
+            new_tower = Tower(tower_center_x, tower_center_y, health=100, tile_size=tile_size, type=tower_index)
+            money -= cost_money
+            resource_1 -= cost_r1
+            resource_2 -= cost_r2
+
         else:
             print("Not enough resources to build tower")
             reward -= 10 # Penalty for trying to build without required resources
@@ -588,7 +603,7 @@ def perform_action(action_type, action_subtype, tile_x, tile_y,
             return money, resource_1, resource_2, spawn_started, enemies_to_spawn, last_spawn_time, board, reward
         
         factories.append(new_factory)
-        board[tile_y][tile_x] = 5 + new_factory.type
+        board[tile_y][tile_x] = FACTORY_BOARD_BASE + new_factory.type
         
     # Start wave phase
     elif action_type == 2:
@@ -631,7 +646,7 @@ def draw_end_screen(screen, text):
 def get_starting_board(board_file):
     board = []
     
-    for i in range(11):
+    for i in range(_N + 1):
         board.append([int(x) for x in board_file.readline().strip().split(",")])
         
     return board

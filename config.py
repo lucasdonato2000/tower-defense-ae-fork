@@ -6,8 +6,8 @@ BASE_PATH = os.path.dirname(__file__)
 ASSETS_PATH = os.path.join(BASE_PATH, "assets", "Sprites")
 DATA_PATH = os.path.join(BASE_PATH, "data")
 
-CURRENT_BOARD_FILE = os.path.join(DATA_PATH, "board_test_random.txt")
-CURRENT_WAVE_FILE = os.path.join(DATA_PATH, "wave_test_random.txt")
+from paths import CURRENT_BOARD_FILE
+from paths import CURRENT_WAVE_FILE
 
 # Starting resources
 STARTING_MONEY = 10
@@ -34,14 +34,12 @@ FACTORY1_COST_RESOURCE_1 = 10
 
 FACTORY_DEATH_PENALTY = 10
 
-SCREEN_WIDTH = 1000
-SCREEN_HEIGHT = 800
+from size import SCREEN_WIDTH, SCREEN_HEIGHT, TILE_COUNT
 
 max_board_width = SCREEN_WIDTH - 300
 max_board_height = SCREEN_HEIGHT - 40
 board_size = min(max_board_width, max_board_height)
 
-TILE_COUNT = 10
 TILE_SIZE = board_size // TILE_COUNT
 BOARD_SIZE = TILE_SIZE * TILE_COUNT
 
@@ -106,7 +104,7 @@ except pygame.error as e:
     print(f"Could not load factory sprite: {e}")
     FACTORY_SPRITES.append(None)
 
-# Colors - suggested by ChatGPT
+# Colors - suggestet by ChatGPT
 BG_COLOR = (40, 40, 40)             # Window background
 BOARD_COLOR = (0, 0, 0)             # Board background
 UI_PANEL_COLOR = (60, 60, 60)       # UI panel background

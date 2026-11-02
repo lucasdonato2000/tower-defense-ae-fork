@@ -3,7 +3,7 @@ import pygame
 from math import *
 
 class Bullet:
-    def __init__(self, x: float, y: float, velocity: float = 2.0, type: int = 0, is_enemy_bullet: bool = False):
+    def __init__(self, x: float, y: float, velocity: float = 2.0, type: int = 0, is_enemy_bullet: bool = False, splash: float = 0.0):
         self.x = x
         self.y = y
         self.velocity = velocity
@@ -13,6 +13,7 @@ class Bullet:
         self.type = type
         self.is_enemy_bullet = is_enemy_bullet
         self.factory_damage = 10
+        self.splash = splash  # radio de dano en area en pixeles (0 = sin area)
         
     def get_target(self, enemy):
         a = pow(enemy.velocity, 2) - pow(self.velocity, 2)
@@ -79,6 +80,7 @@ class Bullet:
         self.y += self.facing[1] * self.velocity * delta_time
             
     def draw(self, surface: pygame.Surface, size: float = 2.0):
+        color = (200, 200, 200)
         if self.type == 0:
             color = (98, 96, 255)
         elif self.type == 1:
