@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tdenv"
+version = "0.2.0"
+description = "Fork del entorno BP-tower-defense (Gymnasium): tablero n x n, torres por tabla y mapas por archivo"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+dependencies = ["gymnasium", "numpy", "pygame"]
+
+[tool.setuptools.packages.find]
+include = ["tdenv*"]
+
+[tool.setuptools.package-data]
+tdenv = ["assets/**/*", "data/*"]
